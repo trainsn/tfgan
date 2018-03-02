@@ -243,15 +243,14 @@ def generate_op_tf_from_op_gmm(opacity_gmm, min_scalar_value, max_scalar_value, 
             opacity_map[idx, 0] = gmm_sample
     return opacity_map
 
-
-def generate_tf_from_gmm(opacity_gmm, color_gmm, min_scalar_value, max_scalar_value, res=256, write_scalars=True):
-    #opacity_map = generate_op_tf_from_op_gmm(opacity_gmm, min_scalar_value, max_scalar_value, res, write_scalars)
+#add by trainsn
+def generat_tf_from_tf1d_gmm(tf1d_filename, color_gmm, min_scalar_value, max_scalar_value, res=256, write_scalars=True):
     if write_scalars:
         opacity_map = np.zeros((res, 2))
     else:
         opacity_map = np.zeros((res, 1))
         
-    f = open('foot-1.TF1D','r')
+    f = open(tf1d_filename,'r')
     i = 0
     intensity = []
     al = [] 
@@ -261,9 +260,18 @@ def generate_tf_from_gmm(opacity_gmm, color_gmm, min_scalar_value, max_scalar_va
             keyNum, thresholdL, threhsholdU= line.split()
             keyNum = int(keyNum)
         else:
-            intensity.append(float(line.split()[0])*res)
-            al.append(float(line.split()[4])/255.0)
-            
+            Tintensity = float(line.split()[0])*res + np.random.normal(0,2)
+            if Tintensity  <min_scalar_value:
+                Tintensity = min_scalar_value
+            elif Tintensity>max_scalar_value:
+                Tintensity = max_scalar_value
+            intensity.append(float(line.split()[0])*res) #intensity
+            al.append(float(line.split()[4])/255.0) #opcaity
+    
+    order = np.argsort(intensity)
+    intensity = np.asarray(intensity)[order]
+    al = np.asarray(al)[order]
+     
     cur = 0
     for idx in range(res):
         interp = float(idx) / (res - 1)
@@ -282,6 +290,14 @@ def generate_tf_from_gmm(opacity_gmm, color_gmm, min_scalar_value, max_scalar_va
             else:
                 opacity_map[idx, 1] = al[cur]   
                 
+    if color_gmm is not None:
+        color_map = pw_color_map_sampler(min_scalar_value, max_scalar_value, color_gmm, res, write_scalars)
+        return opacity_map, color_map
+    else:
+        return opacity_map
+
+def generate_tf_from_gmm(opacity_gmm, color_gmm, min_scalar_value, max_scalar_value, res=256, write_scalars=True):
+    opacity_map = generate_op_tf_from_op_gmm(opacity_gmm, min_scalar_value, max_scalar_value, res, write_scalars)                
     if color_gmm is not None:
         color_map = pw_color_map_sampler(min_scalar_value, max_scalar_value, color_gmm, res, write_scalars)
         return opacity_map, color_map

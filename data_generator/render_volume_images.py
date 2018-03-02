@@ -16,11 +16,12 @@ view_params = np.load(sys.argv[2])
 opacity_maps = np.load(sys.argv[3])
 color_maps = np.load(sys.argv[4])
 base_dir = os.path.dirname(sys.argv[2])
+bg_color = float(sys.argv[5])
 if base_dir[-1] != '/':
     base_dir += '/'
 
 sf_name = 'Scalars_'
-if len(sys.argv) >= 6:
+if len(sys.argv) >= 7:
     sf_name = sys.argv[5]
 
 # jet
@@ -48,10 +49,14 @@ volume_diag = volume_max - volume_origin
 
 # setup renderer
 renderer = vtk.vtkRenderer()
-renderer.SetBackground(0.310999694819562063, 0.3400015259021897, 0.4299992370489052)
+#renderer.SetBackground(0.310999694819562063, 0.3400015259021897, 0.4299992370489052)
+renderer.SetBackground(bg_color,bg_color,bg_color)
+
+
 render_window = vtk.vtkRenderWindow()
 render_window.SetOffScreenRendering(1)
 render_window.AddRenderer(renderer)
+render_window.SetSize(256, 256)
 
 # setup camera - default to offset Z-axis
 camera = renderer.MakeCamera()
@@ -89,7 +94,7 @@ output_img_dir = base_dir + 'imgs/'
 inputs_dir = base_dir + 'inputs/'
 ind = 0
 for view_param, opacity_map, color_map in tqdm(zip(view_params, opacity_maps, color_maps)):
-    rel_filename = 'vimage' + str(ind) + '.png'
+    rel_filename = 'vimage' + str(ind) + '.bmp'
     output_filenames_file.write(rel_filename + '\n')
     elev, azimuth, roll, zoom = view_param
 
@@ -117,7 +122,7 @@ for view_param, opacity_map, color_map in tqdm(zip(view_params, opacity_maps, co
         window_to_image.SetInput(render_window)
         window_to_image.Update()
 
-        image_writer = vtk.vtkPNGWriter()
+        image_writer = vtk.vtkBMPWriter()
         image_writer.SetFileName(output_img_dir + rel_filename)
         image_writer.SetInputConnection(window_to_image.GetOutputPort())
         image_writer.Write()
