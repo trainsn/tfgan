@@ -1,6 +1,7 @@
 from colormath.color_objects import LabColor, sRGBColor, HSLColor
 from colormath.color_conversions import convert_color
 import numpy as np
+import pdb
 
 
 def generate_random_opacity_map(min_scalar_value, max_scalar_value, num_cps):
@@ -214,10 +215,10 @@ def generate_opacity_color_gmm(min_scalar_value, max_scalar_value, num_modes, mi
     smoothed_color_gmm[0, :] = color_gmm[0, :]
     smoothed_color_gmm[-1, :] = color_gmm[-1, :]
     for cdx, color in enumerate(color_gmm[1:-1, :]):
-        weights = np.exp(-np.power((sorted_opacity_gmm[cdx, 0] -
+        weights = np.exp(-np.power((color_gmm[cdx + 1, 0] -
                                     color_gmm[:, 0]), 2) / np.power(sorted_opacity_gmm[cdx, 1], 2))
         normalized_weights = weights / np.sum(weights)
-        smoothed_color_gmm[cdx + 1, 0] = sorted_opacity_gmm[cdx, 0]
+        smoothed_color_gmm[cdx + 1, 0] = color_gmm[cdx + 1, 0]
         smoothed_color_gmm[cdx + 1, 1:] = np.sum((color_gmm[:, 1:].T * normalized_weights).T, axis=0)
 
     return opacity_gmm, smoothed_color_gmm
@@ -244,7 +245,43 @@ def generate_op_tf_from_op_gmm(opacity_gmm, min_scalar_value, max_scalar_value, 
 
 
 def generate_tf_from_gmm(opacity_gmm, color_gmm, min_scalar_value, max_scalar_value, res=256, write_scalars=True):
-    opacity_map = generate_op_tf_from_op_gmm(opacity_gmm, min_scalar_value, max_scalar_value, res, write_scalars)
+    #opacity_map = generate_op_tf_from_op_gmm(opacity_gmm, min_scalar_value, max_scalar_value, res, write_scalars)
+    if write_scalars:
+        opacity_map = np.zeros((res, 2))
+    else:
+        opacity_map = np.zeros((res, 1))
+        
+    f = open('foot-1.TF1D','r')
+    i = 0
+    intensity = []
+    al = [] 
+    for line in f.readlines():
+        i = i+1
+        if i==1:
+            keyNum, thresholdL, threhsholdU= line.split()
+            keyNum = int(keyNum)
+        else:
+            intensity.append(float(line.split()[0])*res)
+            al.append(float(line.split()[4])/255.0)
+            
+    cur = 0
+    for idx in range(res):
+        interp = float(idx) / (res - 1)
+        scalar_val = min_scalar_value + interp * (max_scalar_value - min_scalar_value)
+        if cur < keyNum-1 and scalar_val > intensity[cur+1]:
+            cur = cur + 1
+        if write_scalars:
+            opacity_map[idx, 0] = scalar_val
+            if cur < keyNum-1:    
+                opacity_map[idx, 1] = (al[cur+1]-al[cur])*(scalar_val-intensity[cur])/(intensity[cur+1]-intensity[cur]) + al[cur]
+            else:
+                opacity_map[idx, 1] = al[cur]
+        else:
+            if cur < keyNum-1:    
+                opacity_map[idx, 1] = (al[cur+1]-al[cur])*(scalar_val-intensity[cur])/(intensity[cur+1]-intensity[cur]) + al[cur]
+            else:
+                opacity_map[idx, 1] = al[cur]   
+                
     if color_gmm is not None:
         color_map = pw_color_map_sampler(min_scalar_value, max_scalar_value, color_gmm, res, write_scalars)
         return opacity_map, color_map
