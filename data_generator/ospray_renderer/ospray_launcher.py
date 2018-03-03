@@ -21,8 +21,8 @@ parser.add_argument("color", help="path to npy version color file")
 parser.add_argument("-o", "--outdir", default="./", help="output directory")
 parser.add_argument("-v", "--var", default="1.5",
                     help="variance threshold DEFAULT=1.5")
-parser.add_argument("-r", "--rounds", default="20",
-                    help="number of rounds DEFAULT=20")
+parser.add_argument("-r", "--rounds", default="1",
+                    help="number of rounds DEFAULT=1")
 parser.add_argument("-s", "--start", default=0, type=int,
                     help="starting index DEFAULT=0")
 parser.add_argument("-e", "--end", default=100, type=int,

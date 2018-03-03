@@ -80,6 +80,8 @@ class MetaGenerator(object):
         for i in range(n):            
             if idx == 0:
                 elevation = np.random.uniform(0,(ele_mean[idx+1]+ele_mean[idx])/2)
+            elif idx == len(ele_mean)-1:
+                elevation = np.random.uniform((ele_mean[idx-1]+ele_mean[idx])/2,180)
             else:
                 elevation = np.random.uniform((ele_mean[idx-1]+ele_mean[idx])/2,(ele_mean[idx+1]+ele_mean[idx])/2)
             azimuth = np.random.uniform(0, 360)

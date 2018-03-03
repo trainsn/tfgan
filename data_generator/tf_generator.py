@@ -265,7 +265,7 @@ def generat_tf_from_tf1d_gmm(tf1d_filename, color_gmm, min_scalar_value, max_sca
                 Tintensity = min_scalar_value
             elif Tintensity>max_scalar_value:
                 Tintensity = max_scalar_value
-            intensity.append(float(line.split()[0])*res) #intensity
+            intensity.append(Tintensity) #intensity
             al.append(float(line.split()[4])/255.0) #opcaity
     
     order = np.argsort(intensity)

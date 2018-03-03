@@ -2,13 +2,15 @@
 #include "ParamReader.h"
 #include "VolumeReader.h"
 #include "glm/gtx/rotate_vector.hpp"
-#include "lodepng.h"
+#include "BMPWriter.h"
 #include "ospray/ospray.h"
 #include "vtkCamera.h"
 #include <iostream>
 #include <memory>
 #include <vtkDirectory.h>
 #include <stdio.h>
+#include <iostream>
+#include <math.h>
 
 using namespace std;
 using namespace glm;
@@ -72,7 +74,10 @@ int main(int argc, char **argv) {
         usage();
         exit(1);
     }
-
+    for (int i=0;i<argc;i++){
+        std::cout << argv[i] << " ";
+    }
+    std::cout << std::endl;
     string image_file_path = argv[1];
     string view_file_path = argv[2];
     string opacity_file_path = argv[3];
@@ -113,6 +118,7 @@ int main(int argc, char **argv) {
         return init_err;
     }
     auto camera = ospNewCamera("perspective");
+    //auto camera = ospNewCamera("orthographic");
     OSPTransferFunction tf = ospNewTransferFunction("piecewise_linear");
     auto volume = ospNewVolume("shared_structured_volume");
     OSPModel world = ospNewModel();
@@ -127,8 +133,9 @@ int main(int argc, char **argv) {
     ospCommit(lights);
     // setup renderer
     ospSet1i(renderer, "aoSamples", 128);
-    ospSet3f(renderer, "bgColor", 0.310999694819562063f, 0.3400015259021897f,
-             0.4299992370489052f);
+    //ospSet3f(renderer, "bgColor", 0.310999694819562063f, 0.3400015259021897f,
+    //         0.4299992370489052f);
+    ospSet3f(renderer, "bgColor", 0.0f, 0.0f, 0.0f);
     ospSetObject(renderer, "model", world);
     ospSetObject(renderer, "camera", camera);
     ospSet1i(renderer, "aoTransparencyEnabled", 1);
@@ -147,7 +154,7 @@ int main(int argc, char **argv) {
     for (auto config_id = i_begin; config_id < i_end; ++config_id) {
         stringstream ss;
         string img_file_name;
-        ss << img_dir << "vimage" << config_id << ".png";
+        ss << img_dir << "vimage" << config_id << ".bmp";
         img_file_name = ss.str();
         ss.str("");
         ss.clear();
@@ -177,6 +184,7 @@ int main(int argc, char **argv) {
         ospCommit(volume);
         ospCommit(world);
         ospCommit(renderer);
+        //std::cout<<"finish commit" << std::endl;
 
         // clear buffer
         ospFrameBufferClear(buf, OSP_FB_COLOR | OSP_FB_ACCUM | OSP_FB_VARIANCE);
@@ -188,9 +196,12 @@ int main(int argc, char **argv) {
         }
 
         float *fb = (float *) ospMapFrameBuffer(buf, OSP_FB_COLOR);
+        //std::cout<<" finish rendering" << std::endl;
+
         // output image
         printf("vimage%d created\n", config_id);
         writeImage(img_file_name, img_size, fb);
+        //std::cout<<" finish output" << std::endl;
 
         ospUnmapFrameBuffer(fb, buf);
         ospRemoveParam(light[1], "direction");
@@ -227,7 +238,7 @@ void writeImage(string file_name, const osp::vec2i img_size,
     //(0,0))
     for (auto y = 0; y < height; ++y) {
         for (auto x = 0; x < width; ++x) {
-            int i = x + (height - 1 - y) * width;
+            int i = x + y * width;
             float w = pixels[4 * i + 3];
             float r = pixels[4 * i + 0];
             float g = pixels[4 * i + 1];
@@ -235,13 +246,16 @@ void writeImage(string file_name, const osp::vec2i img_size,
             img.push_back(toUChar(r));
             img.push_back(toUChar(g));
             img.push_back(toUChar(b));
-            img.push_back(toUChar(w));
+            //img.push_back(toUChar(w));
         }
     }
+    unsigned char* pImage = new unsigned char[width * height * 3];
+    std::copy(img.begin(), img.end(), pImage);
 
-    auto error = lodepng::encode(file_name, img, width, height);
-    if (error)
-        fprintf(stderr, "cannot encode the image:%d\n", error);
+    //auto error = lodepng::encode(file_name, img, width, height);
+    //if (error)
+    //    fprintf(stderr, "cannot encode the image:%d\n", error);
+    Util::BMPWriteImage(file_name.c_str(), pImage, width, height, true);
 }
 
 void setupTransferFunction(OSPTransferFunction &tf, ImageData image,
@@ -286,14 +300,24 @@ void setupCamera(OSPCamera &camera, ImageData image, VolParam param,
     vol_max[0] = image.img_org[0] + image.img_spc[0] * image.img_dim[0];
     vol_max[1] = image.img_org[1] + image.img_spc[1] * image.img_dim[1];
     vol_max[2] = image.img_org[2] + image.img_spc[2] * image.img_dim[2];
+    //std::cout << image.img_org[0] << " " << image.img_org[1] << " " << image.img_org[2] << " " << std::endl;
+    //std::cout << vol_max[0] << " " << vol_max[1] << " " << vol_max[2] << " " << std::endl;
 
     float vol_cen[3];
     vol_cen[0] = 0.5f * (image.img_org[0] + vol_max[0]);
     vol_cen[1] = 0.5f * (image.img_org[1] + vol_max[1]);
     vol_cen[2] = 0.5f * (image.img_org[2] + vol_max[2]);
+    //std::cout << vol_cen[0] << " " << vol_cen[1] << " " << vol_cen[2] << " " << std::endl;
+
+    float vol_diag[3];
+    vol_diag[0] = vol_max[0] - image.img_org[0];
+    vol_diag[1] = vol_max[0] - image.img_org[1];
+    vol_diag[2] = vol_max[0] - image.img_org[2];
 
     vtkSmartPointer<vtkCamera> vtk_cam = vtkCamera::New();
-    double pos[3] = {vol_cen[0], 2 * -(vol_max[1] - vol_cen[1]), vol_cen[2]};
+    //double pos[3] = {vol_cen[0], 2 * -(vol_max[1] - vol_cen[1]), vol_cen[2]};
+    double pos[3] = {vol_cen[0], vol_cen[1], vol_cen[2] +  0.6 *
+        sqrt(vol_diag[0]*vol_diag[0]+vol_diag[1]*vol_diag[1]+vol_diag[2]*vol_diag[2])};
     vtk_cam->SetPosition(pos);
     double foc[3] = {vol_cen[0], vol_cen[1], vol_cen[2]};
     vtk_cam->SetFocalPoint(foc);
@@ -307,6 +331,8 @@ void setupCamera(OSPCamera &camera, ImageData image, VolParam param,
     vtk_cam->Azimuth(param.view_param[1]);
     vtk_cam->Roll(param.view_param[2]);
     vtk_cam->Zoom(param.view_param[3]);
+    std::cout << param.view_param[0] << " " << param.view_param[1] << " "  << param.view_param[2] << " "
+                                     << param.view_param[3] << std::endl;
 
     vtk_cam->GetPosition(pos);
     vtk_cam->GetFocalPoint(foc);
@@ -321,6 +347,7 @@ void setupCamera(OSPCamera &camera, ImageData image, VolParam param,
                         static_cast<float>(foc[2])};
     float cam_up[3] = {static_cast<float>(up[0]), static_cast<float>(up[1]),
                        static_cast<float>(up[2])};
+    std::cout << up[0] << " " << up[1] << " " << up[2] << std::endl;
     float cam_dir[3] = {cam_foc[0] - cam_pos[0], cam_foc[1] - cam_pos[1],
                         cam_foc[2] - cam_pos[2]};
 
@@ -328,7 +355,8 @@ void setupCamera(OSPCamera &camera, ImageData image, VolParam param,
     ospSet3fv(camera, "dir", cam_dir);
     ospSet3fv(camera, "up", cam_up);
     ospSetf(camera, "aspect", 1.f);
-    ospSetf(camera, "fovy", static_cast<float>(fov));
+    ospSetf(camera, "height", 1.f);
+    //ospSetf(camera, "fovy", static_cast<float>(fov));
 
     vec3 vcam_dir = normalize(vec3(cam_dir[0], cam_dir[1], cam_dir[2]));
     vec3 vcam_up = normalize(vec3(cam_up[0], cam_up[1], cam_up[2]));
@@ -344,5 +372,6 @@ void updateCamera(OSPCamera &camera, ImageData image, VolParam param,
     ospRemoveParam(camera, "up");
     ospRemoveParam(camera, "aspect");
     ospRemoveParam(camera, "fovy");
+    ospRemoveParam(camera, "height");
     setupCamera(camera, image, param, dirs, up_vec);
 }
