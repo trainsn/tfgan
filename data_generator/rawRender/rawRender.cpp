@@ -2,8 +2,6 @@
 #include <vtkPiecewiseFunction.h>
 #include <vtkColorTransferFunction.h>
 #include <vtkVolumeProperty.h>
-#include <vtkVolumeRayCastCompositeFunction.h>
-#include <vtkVolumeRayCastMapper.h>
 #include <vtkVolume.h>
 #include <vtkRenderer.h>
 #include <vtkRenderWindow.h>
@@ -17,6 +15,7 @@
 #include <vtkCamera.h>
 #include <vtkWindowToImageFilter.h>
 #include <vtkBMPWriter.h>
+#include <vtkSmartVolumeMapper.h>
 
 #include <iostream>
 #include <sstream>
@@ -78,11 +77,10 @@ int main(int argc, char **argv)
 	reader->SetDataOrigin(0.0, 0.0, 0.0);//设置基准点，（一般没有用）做虚拟切片时可能会用的上
 	reader->Update();
 
-	vtkSmartPointer<vtkImageCast> readerImageCast = vtkSmartPointer<vtkImageCast>::New();//数据类型转换
-	readerImageCast->SetInputConnection(reader->GetOutputPort());
-	readerImageCast->SetOutputScalarTypeToUnsignedChar();
-	readerImageCast->ClampOverflowOn();//阀值
-	
+        vtkSmartPointer<vtkImageData> imageData =
+           vtkSmartPointer<vtkImageData>::New();
+        imageData->ShallowCopy(reader->GetOutput());
+
 	//设置不透明度传递函数//该函数确定各体绘像素或单位长度值的不透明度
 	vtkSmartPointer<vtkPiecewiseFunction> opacityTransferFunction = vtkSmartPointer<vtkPiecewiseFunction>::New();//一维分段函数变换
 	opacityTransferFunction->AddPoint(20, 0.0);
@@ -107,16 +105,9 @@ int main(int argc, char **argv)
         volumeProperty->SetSpecular(0.75);//高光系数
         volumeProperty->SetSpecularPower(40); //高光强度
 
-        vtkSmartPointer<vtkVolumeRayCastCompositeFunction> compositeFunction = vtkSmartPointer<vtkVolumeRayCastCompositeFunction>::New();
-	//运行沿着光线合成
-	//定义绘制者
-        /*vtkVolumeRayCastMapper *volumeMapper = vtkVolumeRayCastMapper::New(); //体绘制器
-        volumeMapper->SetVolumeRayCastFunction(compositeFunction); //载入绘制方法
-	volumeMapper->SetInputConnection(readerImageCast->GetOutputPort());//图像数据输入
-	volumeMapper->SetNumberOfThreads(3);*/
         vtkSmartPointer<vtkSmartVolumeMapper> volumeMapper = vtkSmartPointer<vtkSmartVolumeMapper>::New();
         volumeMapper->SetBlendModeToComposite(); // composite first
-        volumeMapper->SetInputConnection(readerImageCast->GetOutputPort());
+        volumeMapper->SetInputData(imageData);
         volumeMapper->SetRequestedRenderModeToGPU();
 	//定义Volume
 	vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();//表示透示图中的一组三维数据
@@ -138,7 +129,7 @@ int main(int argc, char **argv)
 
     vtkSmartPointer<vtkCamera> vtk_cam = vtkCamera::New();
     //double pos[3] = {vol_cen[0], 2 * -(vol_max[1] - vol_cen[1]), vol_cen[2]};
-    double pos[3] = {vol_cen[0], vol_cen[1], vol_cen[2] +  0.6 *
+    double pos[3] = {vol_cen[0], vol_cen[1], vol_cen[2] +  2.5 *
         sqrt(vol_diag[0]*vol_diag[0]+vol_diag[1]*vol_diag[1]+vol_diag[2]*vol_diag[2])};
     vtk_cam->SetPosition(pos);
     double foc[3] = {vol_cen[0], vol_cen[1], vol_cen[2]};
@@ -157,8 +148,8 @@ int main(int argc, char **argv)
     stringstream ss;
     string img_file_name;
     string img_dir = base_dir + "imgs/";
-    if (!vtk_dir->FileIsDirectory(img_dir.c_str()))
-        vtk_dir->MakeDirectory(img_dir.c_str());
+    /*if (!vtk_dir->FileIsDirectory(img_dir.c_str()))
+        vtk_dir->MakeDirectory(img_dir.c_str());*/
     while (fscanf(view_fp, "%lf%lf%lf%lf", &elevation, &azimuth, &roll, &zoom)!=EOF){
         vtk_cam->Elevation(elevation);
         vtk_cam->Azimuth(azimuth);
