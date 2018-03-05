@@ -63,8 +63,8 @@ camera = renderer.MakeCamera()
 camera.SetClippingRange(0.01, offset_scale * 2.0 * np.linalg.norm(volume_diag))
 camera.SetPosition(volume_center[0], volume_center[1], volume_center[2] + offset_scale * np.linalg.norm(volume_diag))
 camera.SetFocalPoint(volume_center[0], volume_center[1], volume_center[2])
-camera.SetViewUp(-1.0,0.0,0.0)
-# camera.SetParallelScale(135.24329927948372)
+#camera.SetParallelScale(135.24329927948372)
+#camera.ParallelProjectionOn()
 camera.Elevation(-85)
 renderer.SetActiveCamera(camera)
 
@@ -72,6 +72,15 @@ renderer.SetActiveCamera(camera)
 prop_volume = vtk.vtkVolumeProperty()
 prop_volume.ShadeOff()
 prop_volume.SetInterpolationTypeToLinear()
+with_light = False
+if with_light == True:
+    prop_volume.ShadeOn()
+    prop_volume.SetAmbient(1.0)
+    prop_volume.SetDiffuse(0.5)
+    prop_volume.SetSpecular(0.75)
+    prop_volume.SetSpecularPower(40)
+else:
+    prop_volume.ShadeOff()
 
 # vtk volume renderer
 mapperVolume = vtk.vtkSmartVolumeMapper()
