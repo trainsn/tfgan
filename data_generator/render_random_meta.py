@@ -39,7 +39,7 @@ class MetaGenerator(object):
 #        self.scalar_step = (self.max_scalar_value - self.min_scalar_value) / (self.num_cps - 1)
         self.min_elevation = 5
         self.max_elevation = 165
-        self.max_modes = 3
+        self.max_modes = 5
         self.max_zoom = max_zoom
         self.tf_res = 256
         self.tf1d_filename = tf1d_filename
@@ -165,7 +165,7 @@ def main():
     parser.add_argument("tf1d_filename", help="tf1d file name")
     parser.add_argument("bg_color", help="background color")
     parser.add_argument("-n", "--name", default="Scalars_", help="Scalar field name")
-    parser.add_argument("-z", "--max_zoom", default=1.5, type=float, help="max zoom")
+    parser.add_argument("-z", "--max_zoom", default=1.2, type=float, help="max zoom")
     parser.add_argument("-begin_alpha", "--begin_alpha", default=0.1, type=float, help="opacity TF domain starting point (percentage of full domain)")
     parser.add_argument("-end_alpha", "--end_alpha", default=0.9, type=float, help="opacity TF domain ending point (percentage of full domain)")
 

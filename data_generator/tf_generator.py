@@ -261,7 +261,7 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
             keyNum, thresholdL, threhsholdU= line.split()
             keyNum = int(keyNum)
         else:
-            Tintensity = float(line.split()[0])*res + np.random.normal(0,1)
+            Tintensity = float(line.split()[0])*res #+ np.random.normal(0,1)            
             if Tintensity  <min_scalar_value:
                 Tintensity = min_scalar_value
             elif Tintensity>max_scalar_value:
@@ -293,7 +293,10 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
                 opacity_map[idx, 1] = al[cur]   
               
     #pdb.set_trace()
+    if num_modes > (i-3):
+        num_modes = i - 3
     color_gmm = np.zeros((num_modes+2, 4))
+    
     
     seq1 = range(i-3)
     seq = []
@@ -310,19 +313,19 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
     window_en = (1-slide_window_size) * al[0] + slide_window_size
     if bg_color == 0:
         color_gmm[0, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
-                 v_scale*np.random.uniform(window_st, window_en)), sRGBColor).get_value_tuple()
+                  (1-v_scale)/2 + v_scale*np.random.uniform(window_st, window_en)), sRGBColor).get_value_tuple()
     else:       
         color_gmm[0, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
-                v_scale*(1 - np.random.uniform(window_st, window_en))), sRGBColor).get_value_tuple()
+               (1-v_scale)/2 + v_scale*(1 - np.random.uniform(window_st, window_en))), sRGBColor).get_value_tuple()
         
     window_st = (1-slide_window_size) * al[-1]
     window_en = (1-slide_window_size) * al[-1] + slide_window_size
     if bg_color == 0:
         color_gmm[-1, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
-                 v_scale*np.random.uniform(window_st, window_en)), sRGBColor).get_value_tuple()
+                 (1-v_scale)/2 + v_scale*np.random.uniform(window_st, window_en)), sRGBColor).get_value_tuple()
     else:
         color_gmm[-1, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
-                v_scale*(1 - np.random.uniform(window_st, window_en))), sRGBColor).get_value_tuple() 
+                (1-v_scale)/2 + v_scale*(1 - np.random.uniform(window_st, window_en))), sRGBColor).get_value_tuple() 
     for idx in range(num_modes):
         color_gmm[idx, 0] = intensity[seq[idx]+1] 
         window_st = (1-slide_window_size) * al[seq[idx]+1]
@@ -337,7 +340,6 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
     color_gmm = color_gmm[sorted_color_inds, :]
     color_map = pw_color_map_sampler(min_scalar_value, max_scalar_value, color_gmm, res, write_scalars)
     return opacity_map, color_map
-
 
 def generate_tf_from_gmm(opacity_gmm, color_gmm, min_scalar_value, max_scalar_value, res=256, write_scalars=True):
     opacity_map = generate_op_tf_from_op_gmm(opacity_gmm, min_scalar_value, max_scalar_value, res, write_scalars)                

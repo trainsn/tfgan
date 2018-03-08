@@ -30,9 +30,13 @@
 #include <sstream>
 #include <random>
 #include <vector>
+#include <math.h>
+#include <time.h>
+
 
 using namespace std;
 const int res = 256;
+const double PI = 3.1415926;
 
 bool fexists(const string& name){
     if (FILE *file = fopen(name.c_str(), "r")) {
@@ -82,7 +86,6 @@ int main(int argc, char **argv)
     renWin->AddRenderer(ren);//将绘制者加入绘制窗口
     /*vtkSmartPointer<vtkRenderWindowInteractor> iren = vtkSmartPointer<vtkRenderWindowInteractor>::New();//设置绘制交互操作窗口的
     iren->SetRenderWindow(renWin);//将绘制窗口添加到交互窗口
-
     vtkSmartPointer<vtkInteractorStyleTrackballCamera> style = vtkSmartPointer<vtkInteractorStyleTrackballCamera>::New();//交互摄像机
     iren->SetInteractorStyle(style);//style为交互模式*/
     vtkSmartPointer<vtkImageReader> reader = vtkSmartPointer<vtkImageReader>::New();
@@ -105,9 +108,25 @@ int main(int argc, char **argv)
     vtkSmartPointer<vtkVolumeProperty> volumeProperty = vtkSmartPointer<vtkVolumeProperty>::New();
 
     vtkSmartPointer<vtkSmartVolumeMapper> volumeMapper = vtkSmartPointer<vtkSmartVolumeMapper>::New();
+    //vtkNew<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
+    //vtkSmartPointer<vtkGPUVolumeRayCastMapper> volumeMapper = vtkSmartPointer<vtkGPUVolumeRayCastMapper>::New();
     volumeMapper->SetBlendModeToComposite(); // composite first
+    //volumeMapper->SetBlendModeToMaximumIntensity();
     volumeMapper->SetInputData(imageData);
-    volumeMapper->SetRequestedRenderModeToGPU();
+    //volumeMapper->SetRequestedRenderModeToGPU();
+    volumeMapper->AutoAdjustSampleDistancesOff();
+    //cout <<  volumeMapper->GetSampleDistance() << " ";
+    double rayCastingStep = 1;
+    if (1.0 / xiSize  < rayCastingStep)
+        rayCastingStep = 1.0 / xiSize;
+    if (1.0 / yiSize  < rayCastingStep)
+        rayCastingStep = 1.0 / yiSize;
+    if (1.0 / ziSize  < rayCastingStep)
+        rayCastingStep = 1.0 / ziSize;
+    rayCastingStep *= 0.3;
+    volumeMapper->SetSampleDistance(rayCastingStep);
+    //cout << rayCastingStep << endl;
+
     //定义Volume
     vtkSmartPointer<vtkVolume> volume = vtkSmartPointer<vtkVolume>::New();//表示透示图中的一组三维数据
     volume->SetMapper(volumeMapper);
@@ -127,7 +146,12 @@ int main(int argc, char **argv)
     vol_diag[2] = ziSize;
 
     vtkSmartPointer<vtkCamera> vtk_cam = vtkCamera::New();
-    double pos[3] = {vol_cen[0], vol_cen[1], vol_cen[2] +   0.85 *
+    double dist_scale = 0.5;
+    if (volume_type == "foot")
+        dist_scale = 0.85;
+    else if (volume_type == "engine")
+        dist_scale = 0.6;
+    double pos[3] = {vol_cen[0], vol_cen[1], vol_cen[2] +   dist_scale*
         sqrt(vol_diag[0]*vol_diag[0]+vol_diag[1]*vol_diag[1]+vol_diag[2]*vol_diag[2])};
     vtk_cam->SetPosition(pos);
     double foc[3] = {vol_cen[0], vol_cen[1], vol_cen[2]};
@@ -138,7 +162,7 @@ int main(int argc, char **argv)
 
     vtk_cam->Elevation(-85.f);
 
-    // Create a sphere
+    // Create a sphere at volume center(for test)
     /*vtkSmartPointer<vtkSphereSource> sphereSource =
       vtkSmartPointer<vtkSphereSource>::New();
     sphereSource->SetCenter(vol_cen[0], vol_cen[1], vol_cen[2]);
@@ -172,10 +196,11 @@ int main(int argc, char **argv)
     string color_param_file = base_dir + "params/color";
     FILE *color_fp = fopen(color_param_file.c_str(), "r");
 
+    //set up shade params
     default_random_engine e;
-    uniform_real_distribution<double> dis_diffuse(0,1);
-    uniform_real_distribution<double> dis_specular(0,1);
-    uniform_real_distribution<double> dis_specularPower(10, 128);
+    uniform_real_distribution<double> dis_diffuse(0.5,1.5);
+    uniform_real_distribution<double> dis_specular(0.5,1.5);
+    uniform_real_distribution<double> dis_specularPower(10, 100);
     vector<double> diffuse;
     vector<double> specular;
     vector<double> specularPower;
@@ -185,8 +210,13 @@ int main(int argc, char **argv)
         specularPower.push_back(dis_specularPower(e));
     }
 
-    uniform_real_distribution<double> dis_env_light(0,2);
-
+    //set up light source params
+    uniform_real_distribution<double> dis_light_env(2.8,3.0);
+    uniform_int_distribution<int> dis_light_num(1,2);
+    uniform_real_distribution<double> dis_light_dist(280,400);
+    uniform_real_distribution<double> dis_light_elevation(0,180);
+    uniform_real_distribution<double> dis_light_azimuth(0,360);
+    uniform_real_distribution<double> dis_light_energy(0,0.2);
 
     while (fscanf(view_fp, "%lf%lf%lf%lf", &elevation, &azimuth, &roll, &zoom)!=EOF){
         double opacity, r, g, b;
@@ -212,10 +242,13 @@ int main(int argc, char **argv)
         volumeProperty->ShadeOn();//影阴
         volumeProperty->SetInterpolationTypeToLinear();//直线与样条插值之间逐发函数
         volumeProperty->SetAmbient(1.0);//环境光系数
-        volumeProperty->SetDiffuse(diffuse[config_id]);//漫反射
-        volumeProperty->SetSpecular(specular[config_id]);//高光系数
-        volumeProperty->SetSpecularPower(specularPower[config_id]); //高光强度
-        cout << diffuse[config_id] << " " << specular[config_id] << " " << specularPower[config_id] << endl;
+        //volumeProperty->SetDiffuse(diffuse[config_id]);//漫反射
+        //volumeProperty->SetSpecular(specular[config_id]);//高光系数
+        //volumeProperty->SetSpecularPower(specularPower[config_id]); //高光强度
+        volumeProperty->SetDiffuse(0.5);//漫反射
+        volumeProperty->SetSpecular(0.75);//高光系数
+        volumeProperty->SetSpecularPower(40); //高光强度
+        //cout << diffuse[config_id] << " " << specular[config_id] << " " << specularPower[config_id] << endl;
 
         vtk_cam->Elevation(elevation);
         vtk_cam->Azimuth(azimuth);
@@ -225,18 +258,21 @@ int main(int argc, char **argv)
         vtk_cam->GetPosition(pos);
         vtk_cam->GetFocalPoint(foc);
         vtk_cam->OrthogonalizeViewUp();
-        vtk_cam->GetViewUp(up);
+        vtk_cam->GetViewUp(up);     
         if (config_id < render_num / 2){
             vtk_cam->ParallelProjectionOn();
-            vtk_cam->SetParallelScale(135.24329927948372);
+            //cout <<  vtk_cam->GetParallelScale() << endl;
+            //vtk_cam->SetParallelScale(135.24329927948372);
+            vtk_cam->SetParallelScale(125);
         }else {
             vtk_cam->ParallelProjectionOff();
+            vtk_cam->SetParallelScale(1);
         }
 
         ren->SetActiveCamera(vtk_cam);
         ren->SetBackground(bg_color, bg_color, bg_color);
         renWin->SetOffScreenRendering(1);
-        renWin->SetSize(256, 256);//设置背景颜色和绘制窗口大小
+        renWin->SetSize(512, 512);//设置背景颜色和绘制窗口大小
         renWin->Render();//窗口进行绘制
         //iren->Initialize();
         //iren->Start();//初始化并进行交互绘制
@@ -248,16 +284,34 @@ int main(int argc, char **argv)
         for (lights->InitTraversal(), light = lights->GetNextItem();
               light != nullptr; light = lights->GetNextItem(), lightIndex++)
         {
-            /*cout << lightIndex << " ";
-            if (light->LightTypeIsHeadlight())
-                cout << "HeadLight" << " ";
-            else if (light->LightTypeIsSceneLight())
-                cout << "SceneLight" << " ";
-            cout << light->GetIntensity() << endl;*/
-            light->SetIntensity(1);
+            double light_env = dis_light_env(e);
+            light->SetIntensity(light_env);
+            //cout << light->GetPosition()[0] << " " << light->GetPosition()[1] << " " << light->GetPosition()[2] << " " << endl;
         }
-        //std::cout << "Originally there are " << lights->GetNumberOfItems() << " lights." << std::endl;
+        int light_num  = dis_light_num(e);
+        for (int i=0; i<light_num; i++){
+            double light_dist = dis_light_dist(e);
+            double light_elevation = dis_light_elevation(e) * PI / 180;
+            double light_azimuth = dis_light_azimuth(e) * PI / 180;
+            double lightPosition[3] = {light_dist * sin(light_elevation) * cos(light_azimuth),
+                                       light_dist * sin(light_elevation) * sin(light_azimuth),
+                                       light_dist * cos(light_elevation)};
+            double light_energy = dis_light_energy(e);
 
+            vtkSmartPointer<vtkLight> light = vtkSmartPointer<vtkLight>::New();
+            light->SetLightTypeToSceneLight();
+            light->SetPosition(lightPosition[0], lightPosition[1], lightPosition[2]);
+            light->SetPositional(true); // required for vtkLightActor below
+            light->SetConeAngle(10);
+            light->SetFocalPoint(vol_cen[0], vol_cen[1], vol_cen[2]);
+            light->SetDiffuseColor(1,1,1);
+            light->SetAmbientColor(1,1,1);
+            light->SetSpecularColor(1,1,1);
+            light->SetIntensity(light_energy);
+            //cout << light_energy << endl;
+            ren->AddLight(light);
+        }
+        //std::cout << "Now there are " << lights->GetNumberOfItems() << " lights for config_id" << config_id << std::endl;
 
         // Screenshot
         vtkSmartPointer<vtkWindowToImageFilter> windowToImageFilter =
@@ -271,23 +325,41 @@ int main(int argc, char **argv)
         img_file_name = ss.str();
         ss.str("");
         ss.clear();
-        if (fexists(img_file_name)) {
-            config_id++;
-            continue;
+        if (!fexists(img_file_name)) {
+            vtkSmartPointer<vtkBMPWriter> writer =
+              vtkSmartPointer<vtkBMPWriter>::New();
+            writer->SetFileName(img_file_name.c_str());
+            writer->SetInputConnection(windowToImageFilter->GetOutputPort());
+            writer->Write();
         }
-
-        vtkSmartPointer<vtkBMPWriter> writer =
-          vtkSmartPointer<vtkBMPWriter>::New();
-        writer->SetFileName(img_file_name.c_str());
-        writer->SetInputConnection(windowToImageFilter->GetOutputPort());
-        writer->Write();
-
         ren->ResetCameraClippingRange();
 
+        //undo camera
         vtk_cam->Zoom(1.0f/zoom);
         vtk_cam->Roll(-roll);
         vtk_cam->Azimuth(-azimuth);
         vtk_cam->Elevation(-elevation);
+
+        //undo light
+        lightIndex = 0;
+        for (lights->InitTraversal(), light = lights->GetNextItem();
+              light != nullptr; light = lights->GetNextItem(), lightIndex++)
+        {
+            //cout << lightIndex << " " << light->GetPosition()[0] << " " << light->GetPosition()[1] << " " << light->GetPosition()[2] << " " << endl;
+            if (lightIndex)
+                ren->RemoveLight(light);
+        }
+        //cout << endl;
+        //std::cout << "Now there are " << lights->GetNumberOfItems() << " lights after remove." << std::endl;
         config_id++;
+        if (!(config_id % 1000)){
+            time_t nowtime;
+            nowtime = time(NULL);
+            struct tm *local;
+            local=localtime(&nowtime);  //获取当前系统时间
+
+            cout << asctime(local) << "We have finished rendering " << config_id << " pictures" << endl;;
+        }
+        //break;
     }
 }

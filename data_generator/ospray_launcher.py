@@ -3,12 +3,17 @@ import argparse
 import os
 import numpy as np
 from tqdm import tqdm
+import math
+import pdb
 #from multiprocessing import Process
 
-
-def worker(renderer, vti, vw_path, op_path, cl_path, out_dir, var, rounds, ux, uy, uz, start, end):
-    call([renderer, vti, vw_path, op_path, cl_path,
-          out_dir, var, rounds, ux, uy, uz, start, end])
+def sphere_dist(elevation1, azimuth1, elevation2, azimuth2):
+    #pdb.set_trace()
+    elevation1 = (elevation1-90) * math.pi / 180
+    elevation2 = (elevation2-90) * math.pi / 180
+    azimuth1 = azimuth1 * math.pi / 180
+    azimuth2 = azimuth2 * math.pi / 180
+    return math.acos(math.cos(elevation1) * math.cos(elevation2) * math.cos(azimuth1-azimuth2) + math.sin(elevation1) * math.sin(elevation2))   
 
 
 parser = argparse.ArgumentParser("python ospray_launcher.py")
@@ -53,30 +58,52 @@ opacity = np.load(args.outdir + "opacity.npy")
 color = np.load(args.outdir + "color.npy")
 #up_vector = args.up
 
+vp_id = []
+elevation = []
+azimuth = []
+file = open('angle_class.txt','r')
+for line in file.readlines():
+    idx, Televation, Tazimuth = line.split()
+    vp_id.append(int(idx))
+    elevation.append(float(Televation))
+    azimuth.append(float(Tazimuth))
+
 view_path = params_dir + "view"
 opacity_path = params_dir + "opacity"
 color_path = params_dir + "color"
+label_path = args.outdir + "label.txt"
 
 if not os.path.isfile(view_path):
     vof = open(view_path, "w")
     oof = open(opacity_path, "w")
     cof = open(color_path, "w")
+    lof = open(label_path, "w")
     s, e = args.start, args.end
     print("converting all npy file to c++ input")
+    idx = 0
+    #oof.write("%d\n" %e)
     for (vs, op, cs) in tqdm(list(zip(view[:e], opacity[:e], color[:e]))):
         vof.write("%f %f %f %f\n" % (vs[0], vs[1], vs[2], vs[3]))
+        dist_min = 10
+        label = 0
+        for i in vp_id:
+            #pdb.set_trace()
+            if sphere_dist(elevation[i], azimuth[i], vs[0], vs[1]) < dist_min:
+                label = i
+                dist_min = sphere_dist(elevation[i], azimuth[i], vs[0], vs[1])
+        print(str(label), elevation[label], azimuth[label], vs[0], vs[1], str(dist_min))    
+        lof.write("%s %d\n" % (args.outdir + "imgs/vimage"+str(idx)+".bmp", label))
         for (v, o) in op:
             oof.write("%f " % o)
         oof.write("\n")
         for (v, r, g, b) in cs:
             cof.write("%f %f %f " % (r, g, b))
         cof.write("\n")
-
+        idx = idx + 1
     vof.close()
     oof.close()
     cof.close()
     print("converting finished")
-
 
 #print("call the c++ program, Good Luck~")
 #
