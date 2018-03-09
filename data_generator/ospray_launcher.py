@@ -84,15 +84,15 @@ if not os.path.isfile(view_path):
     #oof.write("%d\n" %e)
     for (vs, op, cs) in tqdm(list(zip(view[:e], opacity[:e], color[:e]))):
         vof.write("%f %f %f %f\n" % (vs[0], vs[1], vs[2], vs[3]))
-        dist_min = 10
-        label = 0
-        for i in vp_id:
-            #pdb.set_trace()
-            if sphere_dist(elevation[i], azimuth[i], vs[0], vs[1]) < dist_min:
-                label = i
-                dist_min = sphere_dist(elevation[i], azimuth[i], vs[0], vs[1])
-        print(str(label), elevation[label], azimuth[label], vs[0], vs[1], str(dist_min))    
-        lof.write("%s %d\n" % (args.outdir + "imgs/vimage"+str(idx)+".bmp", label))
+#        dist_min = 10
+#        label = 0
+#        for i in vp_id:
+#            #pdb.set_trace()
+#            if sphere_dist(elevation[i], azimuth[i], vs[0], vs[1]) < dist_min:
+#                label = i
+#                dist_min = sphere_dist(elevation[i], azimuth[i], vs[0], vs[1])
+#        print(str(label), elevation[label], azimuth[label], vs[0], vs[1], str(dist_min))    
+#        lof.write("%s %d\n" % (args.outdir + "imgs/vimage"+str(idx)+".bmp", label))
         for (v, o) in op:
             oof.write("%f " % o)
         oof.write("\n")

@@ -261,7 +261,7 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
             keyNum, thresholdL, threhsholdU= line.split()
             keyNum = int(keyNum)
         else:
-            Tintensity = float(line.split()[0])*res #+ np.random.normal(0,1)            
+            Tintensity = float(line.split()[0])*res + np.random.normal(0,1)            
             if Tintensity  <min_scalar_value:
                 Tintensity = min_scalar_value
             elif Tintensity>max_scalar_value:
