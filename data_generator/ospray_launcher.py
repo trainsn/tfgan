@@ -43,13 +43,13 @@ print(args)
 
 
 # convert npy to txt input
-if args.outdir[-1] != "/":
-    args.outdir += "/"
+if args.outdir[-1] != "\\":
+    args.outdir += "\\"
 if not os.path.exists(args.outdir):
     os.makedirs(args.outdir)
 #print(args.outdir)
 
-params_dir = args.outdir + "params/"
+params_dir = args.outdir + "params\\"
 if not os.path.exists(params_dir):
     os.makedirs(params_dir)
 
@@ -68,9 +68,9 @@ for line in file.readlines():
     elevation.append(float(Televation))
     azimuth.append(float(Tazimuth))
 
-view_path = params_dir + "view"
-opacity_path = params_dir + "opacity"
-color_path = params_dir + "color"
+view_path = params_dir + "view.txt"
+opacity_path = params_dir + "opacity.txt"
+color_path = params_dir + "color.txt"
 label_path = args.outdir + "label.txt"
 
 if not os.path.isfile(view_path):

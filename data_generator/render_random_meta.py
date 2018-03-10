@@ -2,7 +2,7 @@ import sys
 import os
 import numpy as np
 import tf_generator
-import vtk
+#import vtk
 import argparse
 from tqdm import tqdm
 

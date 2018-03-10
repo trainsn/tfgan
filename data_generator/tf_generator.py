@@ -250,7 +250,7 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
         opacity_map = np.zeros((res, 2))
     else:
         opacity_map = np.zeros((res, 1))
-        
+    	
     f = open(tf1d_filename,'r')
     i = 0
     intensity = []
@@ -269,10 +269,14 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
             intensity.append(Tintensity) #intensity
             al.append(float(line.split()[4])/255.0) #opcaity
     
-    order = np.argsort(intensity)
-    intensity = np.asarray(intensity)[order]
-    al = np.asarray(al)[order]
+    #order = np.argsort(intensity)
+    #intensity = np.asarray(intensity)[order]
+    #al = np.asarray(al)[order]	
     intensity[-1] = max_scalar_value
+    intensity[0]=min_scalar_value
+    for idx in range(len(intensity)-1):
+        if intensity[idx] > intensity[idx+1]:
+            intensity[idx+1] = intensity[idx]
      
     cur = 0
     for idx in range(res):
@@ -283,7 +287,10 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
         if write_scalars:
             opacity_map[idx, 0] = scalar_val
             if cur < keyNum-1:    
-                opacity_map[idx, 1] = (al[cur+1]-al[cur])*(scalar_val-intensity[cur])/(intensity[cur+1]-intensity[cur]) + al[cur]
+                if intensity[cur+1] == intensity[cur]:
+                    opacity_map[idx, 1] = al[cur]
+                else:
+                    opacity_map[idx, 1] = (al[cur+1]-al[cur])*(scalar_val-intensity[cur])/(intensity[cur+1]-intensity[cur]) + al[cur]
             else:
                 opacity_map[idx, 1] = al[cur]
         else:
