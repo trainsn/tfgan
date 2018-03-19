@@ -74,7 +74,7 @@ color_path = params_dir + "color.txt"
 label_path = args.outdir + "label.txt"
 
 if not os.path.isfile(view_path):
-    vof = open(view_path, "w")
+    #vof = open(view_path, "w")
     oof = open(opacity_path, "w")
     cof = open(color_path, "w")
     lof = open(label_path, "w")
@@ -82,8 +82,8 @@ if not os.path.isfile(view_path):
     print("converting all npy file to c++ input")
     idx = 0
     #oof.write("%d\n" %e)
-    for (vs, op, cs) in tqdm(list(zip(view[:e], opacity[:e], color[:e]))):
-        vof.write("%f %f %f %f\n" % (vs[0], vs[1], vs[2], vs[3]))
+    for (op, cs) in tqdm(list(zip(opacity[:e], color[:e]))):
+#        vof.write("%f %f %f %f\n" % (vs[0], vs[1], vs[2], vs[3]))
 #        dist_min = 10
 #        label = 0
 #        for i in vp_id:
@@ -100,7 +100,7 @@ if not os.path.isfile(view_path):
             cof.write("%f %f %f " % (r, g, b))
         cof.write("\n")
         idx = idx + 1
-    vof.close()
+    #vof.close()
     oof.close()
     cof.close()
     print("converting finished")

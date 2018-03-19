@@ -1,12 +1,12 @@
 import sys
 import os
 
-volume = ['engine','foot', 'head']
-tf1d_nums = [9, 3, 7]
-count = 25000
+volume = ['engine','foot', 'head', 'vismale', 'head_mri', 'tree', 'Bonsai1', 'Bonsai2', 'fish', 'tooth', 'vessel']
+tf1d_nums = [9, 3, 7, 4, 2, 2, 2, 3, 6, 5, 2]
+count = 50
 color = ['b', 'w']
 debug_mode = 1
-for v in range(2,3):
+for v in range(1,2):
 	file_path='C:\\tfgan\\' + volume[v]
 	if debug_mode == 1:
 		os.system('rd /s ' + file_path)
@@ -15,7 +15,7 @@ for v in range(2,3):
 	tf1d_num = tf1d_nums[v]
 	#tf1d_num = 1
 	for i in range(tf1d_num):
-		for j in range(2):
+		for j in range(0,2):
 			meta_cmd = 'python render_random_meta.py ' + volume[v] + ' ' + file_path+'\\'+str(i+1)+'-'+color[j] + ' ' + str(count) + ' TF1D\\' + volume[v]+'-'+str(i+1)+ '.TF1D ' + str(j)
 			print(meta_cmd)
 			os.system(meta_cmd) 
@@ -31,6 +31,7 @@ for v in range(2,3):
 			opacity_file = file_path + '\\' + str(j+1) + '-' + color[i] + '\\params\\opacity.txt'
 			color_file = file_path + '\\' + str(j+1) + '-' + color[i] + '\\params\\color.txt'
 			copy_cmd = 'type ' + opacity_file + '>>' + all_opacity_file
+            
 			#print(copy_cmd)
 			os.system(copy_cmd)
 			copy_cmd = 'type ' + color_file + '>>' + all_color_file

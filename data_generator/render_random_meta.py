@@ -116,7 +116,7 @@ class MetaGenerator(object):
         for i in tqdm(list(range(n))):
             ops[i, :, :], cms[i, :, :] = self.gen_meta()
         
-        vws = self.gen_view_sphere(n)
+        vws = self.gen_view()
 
 #        for i in range(12):
 #            for j in range(24):

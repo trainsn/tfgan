@@ -255,6 +255,9 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
     i = 0
     intensity = []
     al = [] 
+    r = []
+    g = []
+    b = []
     for line in f.readlines():
         i = i+1
         if i==1:
@@ -267,6 +270,7 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
             elif Tintensity>max_scalar_value:
                 Tintensity = max_scalar_value
             intensity.append(Tintensity) #intensity
+            
             al.append(float(line.split()[4])/255.0) #opcaity
     
     #order = np.argsort(intensity)
