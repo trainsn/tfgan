@@ -39,7 +39,7 @@ class MetaGenerator(object):
 #        self.scalar_step = (self.max_scalar_value - self.min_scalar_value) / (self.num_cps - 1)
         self.min_elevation = 5
         self.max_elevation = 165
-        self.max_modes = 5
+        self.max_modes = 3
         self.max_zoom = max_zoom
         self.tf_res = 256
         self.tf1d_filename = tf1d_filename

@@ -270,7 +270,9 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
             elif Tintensity>max_scalar_value:
                 Tintensity = max_scalar_value
             intensity.append(Tintensity) #intensity
-            
+            r.append(float(line.split()[1])/255.0) #red
+            g.append(float(line.split()[2])/255.0) #green
+            b.append(float(line.split()[3])/255.0) #blue
             al.append(float(line.split()[4])/255.0) #opcaity
     
     #order = np.argsort(intensity)
@@ -281,6 +283,7 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
     for idx in range(len(intensity)-1):
         if intensity[idx] > intensity[idx+1]:
             intensity[idx+1] = intensity[idx]
+    #pdb.set_trace()
      
     cur = 0
     for idx in range(res):
@@ -303,20 +306,25 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
             else:
                 opacity_map[idx, 1] = al[cur]   
               
-    #pdb.set_trace()
+    
+    
     if num_modes > (i-3):
         num_modes = i - 3
-    color_gmm = np.zeros((num_modes+2, 4))
-    
-    
+    color_gmm = np.zeros((i-1, 4))
+    for idx in range(i-1):
+        color_gmm[idx, 0] = intensity[idx]
+        color_gmm[idx, 1] = r[idx]
+        color_gmm[idx, 2] = g[idx]
+        color_gmm[idx, 3] = b[idx]
+    #pdb.set_trace()
     seq1 = range(i-3)
     seq = []
     for idx in seq1:
         seq.append(idx)        
     np.random.shuffle(seq)
     
-    color_gmm[0, 0] = intensity[0]
-    color_gmm[-1, 0] = intensity[-1]
+    #color_gmm[0, 0] = intensity[0]
+    #color_gmm[-1, 0] = intensity[-1]
     slide_window_size = 0.4    
     v_scale = 0.8
 
@@ -338,18 +346,20 @@ def generat_tf_from_tf1d(tf1d_filename, num_modes, bg_color, min_scalar_value, m
         color_gmm[-1, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
                 (1-v_scale)/2 + v_scale*(1 - np.random.uniform(window_st, window_en))), sRGBColor).get_value_tuple() 
     for idx in range(num_modes):
-        color_gmm[idx, 0] = intensity[seq[idx]+1] 
+        color_gmm[idx+1, 0] = intensity[seq[idx]+1] 
         window_st = (1-slide_window_size) * al[seq[idx]+1]
         window_en = (1-slide_window_size) * al[seq[idx]+1] + slide_window_size
         if (bg_color == 0):
-            color_gmm[idx, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
+            color_gmm[idx+1, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
                                                         v_scale*np.random.uniform(window_st, window_en)), sRGBColor).get_value_tuple()
         else:
-            color_gmm[idx, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
+            color_gmm[idx+1, 1:] = convert_color(HSVColor(360.0 * np.random.uniform(), np.random.uniform(),
                                                          v_scale*(1- np.random.uniform(window_st, window_en))), sRGBColor).get_value_tuple()
     sorted_color_inds = np.argsort(color_gmm[:, 0])
     color_gmm = color_gmm[sorted_color_inds, :]
+    #pdb.set_trace()
     color_map = pw_color_map_sampler(min_scalar_value, max_scalar_value, color_gmm, res, write_scalars)
+    #pdb.set_trace()
     return opacity_map, color_map
 
 def generate_tf_from_gmm(opacity_gmm, color_gmm, min_scalar_value, max_scalar_value, res=256, write_scalars=True):
