@@ -1,0 +1,1 @@
+debugfile('/home/cad/下载/tfgan/data_generator/render_random_meta.py',args='combustions.vki combustion 10',wdir='/home/cad/下载/tfgan/data_generator')

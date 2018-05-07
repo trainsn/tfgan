@@ -43,13 +43,13 @@ print(args)
 
 
 # convert npy to txt input
-if args.outdir[-1] != "\\":
-    args.outdir += "\\"
+if args.outdir[-1] != "/":
+    args.outdir += "/"
 if not os.path.exists(args.outdir):
     os.makedirs(args.outdir)
 #print(args.outdir)
 
-params_dir = args.outdir + "params\\"
+params_dir = args.outdir + "params/"
 if not os.path.exists(params_dir):
     os.makedirs(params_dir)
 

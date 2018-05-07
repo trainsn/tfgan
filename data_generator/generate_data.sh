@@ -1,11 +1,11 @@
-volume=("engine" "foot")
-tf1d_nums=(9 3)
-count=50000
+volume=("engine" "foot" "head" "fish" "vismale" "tree")
+tf1d_nums=(9 3 7 6 4 9)
+count=25000
 color=("b" "w")
 debug_mode=$1
-for ((v=0; v<1; v++)); do
-	#file_path=../datasets/${volume[v]}
-	file_path=/media/cad/Elements/tfgan/${volume[v]}
+for ((v=5; v<6; v++)); do
+	file_path=../datasets/${volume[v]}
+	#file_path=/media/cad/0C66F84266F82DD8/tfgan/${volume[v]}
 	if [ $debug_mode == 1 ]
 	then 
 		rm -r $file_path
@@ -15,7 +15,7 @@ for ((v=0; v<1; v++)); do
 	#tf1d_num=1	
 	i=1
 	#while (( $i<=$tf1d_num ))
-	for (( i=1;i<=$tf1d_num;i++ ))
+	for (( i=$tf1d_num;i<=$tf1d_num;i++ ))
 	do	
 		for ((j=0;j<=1;j++)) do	
 			#if [ $debug_mode == 1 ]
@@ -40,12 +40,12 @@ for ((v=0; v<1; v++)); do
 	touch $all_color_b
 	touch $all_color_w
 	
-	for (( i=1;i<=$tf1d_num;i++ ))
+	for (( i=$tf1d_num;i<=$tf1d_num;i++ ))
 	do					
-		cat $file_path/$i-b/params/opacity >> $all_opacity_b
-		cat $file_path/$i-b/params/color >> $all_color_b
-		cat $file_path/$i-w/params/opacity >> $all_opacity_w
-		cat $file_path/$i-w/params/color >> $all_color_w
+		cat $file_path/$i-b/params/opacity.txt >> $all_opacity_b
+		cat $file_path/$i-b/params/color.txt >> $all_color_b
+		cat $file_path/$i-w/params/opacity.txt >> $all_opacity_w
+		cat $file_path/$i-w/params/color.txt >> $all_color_w
 	done
 done
 
