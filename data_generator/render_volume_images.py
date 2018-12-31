@@ -16,12 +16,11 @@ view_params = np.load(sys.argv[2])
 opacity_maps = np.load(sys.argv[3])
 color_maps = np.load(sys.argv[4])
 base_dir = os.path.dirname(sys.argv[2])
-bg_color = float(sys.argv[5])
 if base_dir[-1] != '/':
     base_dir += '/'
 
 sf_name = 'Scalars_'
-if len(sys.argv) >= 7:
+if len(sys.argv) >= 6:
     sf_name = sys.argv[5]
 
 # jet
@@ -49,22 +48,17 @@ volume_diag = volume_max - volume_origin
 
 # setup renderer
 renderer = vtk.vtkRenderer()
-#renderer.SetBackground(0.310999694819562063, 0.3400015259021897, 0.4299992370489052)
-renderer.SetBackground(bg_color,bg_color,bg_color)
-
-
+renderer.SetBackground(0.310999694819562063, 0.3400015259021897, 0.4299992370489052)
 render_window = vtk.vtkRenderWindow()
 render_window.SetOffScreenRendering(1)
 render_window.AddRenderer(renderer)
-render_window.SetSize(256, 256)
 
 # setup camera - default to offset Z-axis
 camera = renderer.MakeCamera()
 camera.SetClippingRange(0.01, offset_scale * 2.0 * np.linalg.norm(volume_diag))
 camera.SetPosition(volume_center[0], volume_center[1], volume_center[2] + offset_scale * np.linalg.norm(volume_diag))
 camera.SetFocalPoint(volume_center[0], volume_center[1], volume_center[2])
-#camera.SetParallelScale(135.24329927948372)
-#camera.ParallelProjectionOn()
+# camera.SetParallelScale(135.24329927948372)
 camera.Elevation(-85)
 renderer.SetActiveCamera(camera)
 
@@ -72,15 +66,6 @@ renderer.SetActiveCamera(camera)
 prop_volume = vtk.vtkVolumeProperty()
 prop_volume.ShadeOff()
 prop_volume.SetInterpolationTypeToLinear()
-with_light = False
-if with_light == True:
-    prop_volume.ShadeOn()
-    prop_volume.SetAmbient(1.0)
-    prop_volume.SetDiffuse(0.5)
-    prop_volume.SetSpecular(0.75)
-    prop_volume.SetSpecularPower(40)
-else:
-    prop_volume.ShadeOff()
 
 # vtk volume renderer
 mapperVolume = vtk.vtkSmartVolumeMapper()
@@ -104,7 +89,7 @@ output_img_dir = base_dir + 'imgs/'
 inputs_dir = base_dir + 'inputs/'
 ind = 0
 for view_param, opacity_map, color_map in tqdm(zip(view_params, opacity_maps, color_maps)):
-    rel_filename = 'vimage' + str(ind) + '.bmp'
+    rel_filename = 'vimage' + str(ind) + '.png'
     output_filenames_file.write(rel_filename + '\n')
     elev, azimuth, roll, zoom = view_param
 
@@ -132,7 +117,7 @@ for view_param, opacity_map, color_map in tqdm(zip(view_params, opacity_maps, co
         window_to_image.SetInput(render_window)
         window_to_image.Update()
 
-        image_writer = vtk.vtkBMPWriter()
+        image_writer = vtk.vtkPNGWriter()
         image_writer.SetFileName(output_img_dir + rel_filename)
         image_writer.SetInputConnection(window_to_image.GetOutputPort())
         image_writer.Write()
